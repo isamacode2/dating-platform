@@ -1,32 +1,37 @@
 from django.contrib.auth.models import User
 from rest_framework import generics, permissions
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
-from .serializers import RegisterSerializer
-from .models import Profile
-from .serializers import ProfileSerializer
+from rest_framework.serializers import ModelSerializer
+
+
+class RegisterSerializer(ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["username", "email", "password"]
+        extra_kwargs = {"password": {"write_only": True}}
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            username=validated_data["username"],
+            email=validated_data.get("email"),
+            password=validated_data["password"],
+        )
+        return user
 
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
-    permission_classes = [AllowAny]  # 🔥 registration must be public
     serializer_class = RegisterSerializer
+    permission_classes = [permissions.AllowAny]
 
 
-class ProfileView(APIView):
+class ProfileView(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        profile = Profile.objects.get(user=request.user)
-        serializer = ProfileSerializer(profile)
-        return Response(serializer.data)
-
-    def put(self, request):
-        profile = Profile.objects.get(user=request.user)
-        serializer = ProfileSerializer(profile, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=400)
+        user = request.user
+        return Response({
+            "username": user.username,
+            "email": user.email,
+        })
 
