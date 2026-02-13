@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import serializers
+from .models import Profile
 
 
 # =========================
@@ -32,7 +33,7 @@ class RegisterView(generics.CreateAPIView):
 
 
 # =========================
-# PROFILE (GET / PUT / PATCH)
+# PROFILE
 # =========================
 
 class ProfileView(APIView):
@@ -47,42 +48,12 @@ class ProfileView(APIView):
             "is_verified": profile.is_verified,
         })
 
-    def put(self, request):
-        """
-        Full update (must send all fields)
-        """
-        profile = request.user.profile
-
-        request.user.username = request.data.get("username", request.user.username)
-        request.user.email = request.data.get("email", request.user.email)
-        profile.bio = request.data.get("bio", profile.bio)
-
-        request.user.save()
-        profile.save()
-
-        return Response({
-            "username": request.user.username,
-            "email": request.user.email,
-            "bio": profile.bio,
-            "is_verified": profile.is_verified,
-        })
-
     def patch(self, request):
-        """
-        Partial update (only send fields you want to change)
-        """
         profile = request.user.profile
-
-        if "username" in request.data:
-            request.user.username = request.data["username"]
-
-        if "email" in request.data:
-            request.user.email = request.data["email"]
 
         if "bio" in request.data:
             profile.bio = request.data["bio"]
 
-        request.user.save()
         profile.save()
 
         return Response({
@@ -91,4 +62,25 @@ class ProfileView(APIView):
             "bio": profile.bio,
             "is_verified": profile.is_verified,
         })
+
+
+# =========================
+# DISCOVER USERS
+# =========================
+
+class DiscoverUsersView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        users = Profile.objects.exclude(user=request.user)
+
+        data = []
+        for profile in users:
+            data.append({
+                "username": profile.user.username,
+                "bio": profile.bio,
+                "is_verified": profile.is_verified,
+            })
+
+        return Response(data)
 
