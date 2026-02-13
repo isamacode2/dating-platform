@@ -1,11 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 
 
 class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(blank=True)
     is_verified = models.BooleanField(default=False)
 
@@ -13,14 +11,20 @@ class Profile(models.Model):
         return self.user.username
 
 
-@receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.create(user=instance)
+class Like(models.Model):
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="likes_sent")
+    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="likes_received")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("sender", "receiver")
 
 
-@receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
-    if hasattr(instance, "profile"):
-        instance.profile.save()
+class Match(models.Model):
+    user1 = models.ForeignKey(User, on_delete=models.CASCADE, related_name="matches_as_user1")
+    user2 = models.ForeignKey(User, on_delete=models.CASCADE, related_name="matches_as_user2")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user1", "user2")
 
