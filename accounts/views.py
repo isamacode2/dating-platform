@@ -4,13 +4,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import serializers
-from .models import Profile
+from .models import Profile, Like, Match
 
 
-# =========================
 # REGISTER
-# =========================
-
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -32,10 +29,7 @@ class RegisterView(generics.CreateAPIView):
     authentication_classes = []
 
 
-# =========================
 # PROFILE
-# =========================
-
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -64,10 +58,7 @@ class ProfileView(APIView):
         })
 
 
-# =========================
 # DISCOVER USERS
-# =========================
-
 class DiscoverUsersView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -80,6 +71,46 @@ class DiscoverUsersView(APIView):
                 "username": profile.user.username,
                 "bio": profile.bio,
                 "is_verified": profile.is_verified,
+            })
+
+        return Response(data)
+
+
+# LIKE USER
+class LikeUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, username):
+        try:
+            receiver = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+
+        if receiver == request.user:
+            return Response({"error": "You cannot like yourself"}, status=400)
+
+        Like.objects.get_or_create(sender=request.user, receiver=receiver)
+
+        # Check if mutual like exists
+        if Like.objects.filter(sender=receiver, receiver=request.user).exists():
+            Match.objects.get_or_create(user1=request.user, user2=receiver)
+            return Response({"match": True})
+
+        return Response({"match": False})
+
+
+# GET MATCHES
+class MatchesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        matches = Match.objects.filter(user1=request.user) | Match.objects.filter(user2=request.user)
+
+        data = []
+        for match in matches:
+            other_user = match.user2 if match.user1 == request.user else match.user1
+            data.append({
+                "username": other_user.username
             })
 
         return Response(data)
