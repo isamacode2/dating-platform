@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import Profile
+from .models import Profile, Follow
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -19,20 +19,6 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 
-class ProfilePublicSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Profile
-        fields = (
-            "display_name",
-            "bio",
-            "location",
-            "role",
-            "is_verified",
-            "verification_level",
-            "created_at",
-        )
-
-
 class ProfilePrivateSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="user.username", read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
@@ -46,8 +32,20 @@ class ProfilePrivateSerializer(serializers.ModelSerializer):
             "bio",
             "location",
             "role",
+            "bio_visibility",
+            "location_visibility",
+            "role_visibility",
             "is_verified",
             "verification_level",
             "created_at",
         )
+
+
+class FollowSerializer(serializers.ModelSerializer):
+    follower = serializers.CharField(source="follower.username", read_only=True)
+    following = serializers.CharField(source="following.username", read_only=True)
+
+    class Meta:
+        model = Follow
+        fields = ("follower", "following", "is_approved", "created_at")
 
