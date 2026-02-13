@@ -9,14 +9,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY
 # ========================
 
-SECRET_KEY = os.environ.get("SECRET_KEY", "dev-insecure-key")
+SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key")
+DEBUG = True
 
-DEBUG = os.environ.get("DEBUG", "False") == "True"
-
-ALLOWED_HOSTS = os.environ.get(
-    "ALLOWED_HOSTS",
-    "dating-platform-production.up.railway.app"
-).split(",")
+ALLOWED_HOSTS = []
 
 # ========================
 # APPLICATIONS
@@ -30,12 +26,12 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 
-    # Third party
+    # Third-party
     "rest_framework",
     "rest_framework_simplejwt",
 
-    # Local apps
-    "accounts",
+    # Local
+    "accounts.apps.AccountsConfig",
 ]
 
 # ========================
@@ -44,7 +40,6 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -78,25 +73,15 @@ TEMPLATES = [
 WSGI_APPLICATION = "mysite.wsgi.application"
 
 # ========================
-# DATABASE (SAFE FOR SQLITE + POSTGRES)
+# DATABASE
 # ========================
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
-
-if DATABASE_URL:
-    DATABASES = {
-        "default": dj_database_url.parse(
-            DATABASE_URL,
-            conn_max_age=600,
-        )
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
+}
 
 # ========================
 # PASSWORD VALIDATION
@@ -123,17 +108,11 @@ USE_TZ = True
 # ========================
 
 STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
-# ========================
-# DEFAULT PRIMARY KEY
-# ========================
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ========================
-# DRF CONFIG (SECURE DEFAULTS)
+# REST FRAMEWORK
 # ========================
 
 REST_FRAMEWORK = {
@@ -141,26 +120,20 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",
+        "rest_framework.permissions.AllowAny",
+    ),
+    "DEFAULT_RENDERER_CLASSES": (
+        "rest_framework.renderers.JSONRenderer",
+        "rest_framework.renderers.BrowsableAPIRenderer",
     ),
 }
 
 # ========================
-# JWT CONFIG
+# JWT SETTINGS
 # ========================
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
-    "AUTH_HEADER_TYPES": ("Bearer",),
 }
-
-# ========================
-# SECURITY HEADERS
-# ========================
-
-if not DEBUG:
-    SECURE_BROWSER_XSS_FILTER = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    X_FRAME_OPTIONS = "DENY"
 
