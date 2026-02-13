@@ -10,6 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ========================
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-insecure-key")
+
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = os.environ.get(
@@ -55,7 +56,7 @@ MIDDLEWARE = [
 ROOT_URLCONF = "mysite.urls"
 
 # ========================
-# TEMPLATES (admin only)
+# TEMPLATES
 # ========================
 
 TEMPLATES = [
@@ -77,16 +78,25 @@ TEMPLATES = [
 WSGI_APPLICATION = "mysite.wsgi.application"
 
 # ========================
-# DATABASE
+# DATABASE (SAFE FOR SQLITE + POSTGRES)
 # ========================
 
-DATABASES = {
-    "default": dj_database_url.config(
-        default="sqlite:///db.sqlite3",
-        conn_max_age=600,
-        ssl_require=not DEBUG
-    )
-}
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if DATABASE_URL:
+    DATABASES = {
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+        )
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 # ========================
 # PASSWORD VALIDATION
@@ -146,7 +156,7 @@ SIMPLE_JWT = {
 }
 
 # ========================
-# SECURITY HEADERS (Production)
+# SECURITY HEADERS
 # ========================
 
 if not DEBUG:
